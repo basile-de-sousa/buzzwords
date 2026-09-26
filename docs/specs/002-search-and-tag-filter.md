@@ -28,6 +28,6 @@ _None._
 
 ## Plan
 
-- [ ] Search index: build a plain-text index (term, acronym, aliases, tags, body stripped of Markdown/HTML) from the loaded fiches and embed it as inline JSON in the home page (AC5).
-- [ ] Search client: pure accent/case-insensitive `filterFiches` and `toggleTag`, plus DOM wiring (search field, tag buttons, "Aucun buzzword ne correspond."), shipped as `search.js` and loaded by a relative path (AC1–AC4).
-- [ ] Home page: search field with French label, tag buttons, `data-slug` list items, hidden empty-state; controls hidden until the script runs so the full list stays usable without JavaScript; mobile-friendly styles.
+- [x] Search index: build a plain-text index (term, acronym, aliases, tags, body stripped of Markdown/HTML) from the loaded fiches and embed it as inline JSON in the home page (AC5).
+- [x] Search client: pure accent/case-insensitive `filterFiches` and `toggleTag`, plus DOM wiring (search field, tag buttons, "Aucun buzzword ne correspond."), shipped as `search.js` and loaded by a relative path (AC1–AC4).
+- [x] Home page: search field with French label, tag buttons, `data-slug` list items, hidden empty-state; controls hidden until the script runs so the full list stays usable without JavaScript; mobile-friendly styles.

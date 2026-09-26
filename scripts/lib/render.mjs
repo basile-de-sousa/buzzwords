@@ -1,6 +1,7 @@
 // HTML templates for the catalog. All links are relative so the site works
 // under the GitHub Pages project path (`/buzzwords/`) as well as at a root.
 import { RELATIONS } from './fiches.mjs';
+import { buildSearchIndex, serializeIndex } from './search-index.mjs';
 
 export const SITE_TITLE = 'Buzzwords';
 
@@ -34,13 +35,38 @@ ${main}
 
 const acronymHtml = (fiche) => (fiche.acronym ? ` <abbr class="acronym">${escapeHtml(fiche.acronym)}</abbr>` : '');
 
-/** Home page: every fiche, already sorted by term. */
+/** Every distinct tag of the fiches, sorted (French collation). */
+function allTags(fiches) {
+  return [...new Set(fiches.flatMap((f) => f.tags))].sort((a, b) => a.localeCompare(b, 'fr', { sensitivity: 'base' }));
+}
+
+// Search field, tag buttons and empty-state message (SPEC-002). The controls stay
+// hidden until `search.js` runs, so without JavaScript the page is the plain list.
+function renderSearch(fiches) {
+  const tags = allTags(fiches);
+  const tagFilter = tags.length
+    ? `<div class="tag-filter" role="group" aria-label="Filtrer par tag">
+${tags.map((t) => `<button type="button" data-tag="${escapeHtml(t)}" aria-pressed="false">${escapeHtml(t)}</button>`).join('\n')}
+</div>`
+    : '';
+  return `<div class="search" id="search" hidden>
+<label class="visually-hidden" for="search-input">Rechercher un buzzword</label>
+<input type="search" id="search-input" placeholder="Rechercher un buzzword…" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="search">
+${tagFilter}
+</div>`;
+}
+
+/** Home page: every fiche, already sorted by term, with search and tag filter. */
 export function renderHome(fiches) {
   const count = fiches.length;
   const list = count
-    ? `<ul class="fiche-list">
-${fiches.map((f) => `<li><a href="./${f.slug}/">${escapeHtml(f.term)}</a>${acronymHtml(f)}</li>`).join('\n')}
-</ul>`
+    ? `${renderSearch(fiches)}
+<ul class="fiche-list">
+${fiches.map((f) => `<li data-slug="${escapeHtml(f.slug)}"><a href="./${f.slug}/">${escapeHtml(f.term)}</a>${acronymHtml(f)}</li>`).join('\n')}
+</ul>
+<p class="empty" id="no-match" role="status" hidden>Aucun buzzword ne correspond.</p>
+<script type="application/json" id="search-index">${serializeIndex(buildSearchIndex(fiches))}</script>
+<script type="module" src="./search.js"></script>`
     : '<p class="empty">Aucune fiche pour l’instant.</p>';
   return layout({
     title: SITE_TITLE,
@@ -146,4 +172,23 @@ h3 { font-size: 1rem; margin: 1rem 0 0.3rem; }
 .relation-group ul { margin: 0; padding-left: 2rem; }
 .body { overflow-wrap: anywhere; }
 .body pre { overflow-x: auto; }
+.visually-hidden {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+[hidden] { display: none !important; }
+.search { margin: 1rem 0 0.5rem; }
+.search input {
+  width: 100%; font: inherit; color: var(--fg); background: var(--bg);
+  padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px;
+}
+.search input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.tag-filter { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.tag-filter button {
+  font: inherit; font-size: 0.85rem; color: var(--fg); background: var(--chip);
+  border: 1px solid transparent; border-radius: 999px; padding: 4px 12px; min-height: 32px; cursor: pointer;
+}
+.tag-filter button[aria-pressed="true"] { background: var(--accent); color: var(--bg); }
+.tag-filter button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.empty { color: var(--muted); }
 `;
