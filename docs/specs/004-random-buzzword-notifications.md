@@ -37,3 +37,8 @@ _None._
 2. Add that name as the `NTFY_TOPIC` secret in the repository settings (Secrets and variables → Actions).
 
 ## Plan
+
+- [ ] Acceptance tests for the pure logic (random pick, title/message formatting, plain-text stripping, fiche URL, local-time gate, fail/succeed paths of AC5) in `test/notify.test.mjs`, against fixtures in `test/fixtures/notify/`.
+- [ ] `scripts/notify.mjs`: testable pure functions (`isNotificationTime`, `pickRandomFiche`, `buildTitle`, `buildMessage`, `buildFicheUrl`) plus a `notify(...)` orchestrator (injectable clock/RNG/fetch) and a `main()` CLI entry point that reads `buzzwords/`, `NTFY_TOPIC` and calls ntfy's JSON publish API.
+- [ ] `.github/workflows/notify.yml`: cron covering both Europe/Paris UTC offsets (winter and summer), `NTFY_TOPIC` passed as an env secret, runs `node scripts/notify.mjs`.
+- [ ] Manual check (documented in the PR, not unit tested): the workflow actually fires at 08:00/13:00/19:00 Paris time across the DST boundary, and a real ntfy notification is received and opens the fiche page on tap.
