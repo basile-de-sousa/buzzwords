@@ -10,7 +10,7 @@ Every click on a buzzword in the home list currently leaves the list behind (SPE
 
 ## Acceptance criteria
 
-- [x] AC1: When JavaScript is available and the user clicks a buzzword link in the home list, the system shall prevent the default navigation, open a side panel over the home page showing that fiche, and push the fiche's URL (`/<slug>/`) onto browser history without a full page reload.
+- [x] AC1: When JavaScript is available and the user clicks a buzzword link in the home list, the system shall prevent the default navigation, open a side panel over the home page showing that fiche, and push the fiche's URL (`/<slug>/`) onto browser history without a full page reload. (superseded by SPEC-006: above the mobile breakpoint the panel pushes the list aside rather than sitting "over" it; unchanged at/below the breakpoint)
 - [x] AC2: The system shall render the panel's fiche content (body, relations, "Cité par", dates) identical to the fiche's own full page, by reusing its already-built markup rather than duplicating it in the home page.
 - [x] AC3: The panel shall include a close control (a button, and the Escape key) that removes the panel, restores the home URL (`/`), and returns focus to the link that opened it, without a full page reload.
 - [x] AC4: The panel shall include an "expand" control that is a real navigation link to the fiche's full page (`/<slug>/`).
