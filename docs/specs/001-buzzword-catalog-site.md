@@ -56,5 +56,5 @@ _None._
 - [x] Load and validate fiches: parse frontmatter and body of `buzzwords/*.md`, fail on missing required fields or slug/file-name mismatch (AC4); expose the sorted fiche list for SPEC-002.
 - [x] Render pages: home page sorted by term with acronyms (AC1), one page per fiche with Markdown body and relation groups (AC2), relation resolution against term/acronym/aliases (AC3), relative links, French copy, shared stylesheet.
 - [x] CLI entry: `npm run build` reads `buzzwords/` and writes `_site/`, exits non-zero on error (AC4).
-- [ ] Deploy: GitHub Actions workflow building and deploying to Pages on push to `main`, plus CI on pull requests (AC5).
+- [x] Deploy: GitHub Actions workflow building and deploying to Pages on push to `main`, plus CI on pull requests (AC5).
 - [ ] ADRs for the build stack and the Pages deployment source.
