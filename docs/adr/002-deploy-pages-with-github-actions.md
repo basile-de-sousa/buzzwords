@@ -1,5 +1,5 @@
 # ADR-002: Deploy GitHub Pages from a GitHub Actions workflow
-Status: proposed - Date: 2026-09-26
+Status: accepted - Date: 2026-09-26
 
 ## Context
 
