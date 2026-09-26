@@ -1,5 +1,5 @@
 ---
-status: ready
+status: in-progress
 ---
 # SPEC-001: Buzzword catalog site
 
