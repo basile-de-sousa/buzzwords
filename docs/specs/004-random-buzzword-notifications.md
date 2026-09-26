@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: done
 depends: SPEC-001
 ---
 # SPEC-004: Random buzzword notifications
@@ -10,11 +10,11 @@ The goal is to learn buzzwords passively, from the phone's lock screen (Google P
 
 ## Acceptance criteria
 
-- [ ] AC1: When the scheduled workflow runs at 08:00, 13:00 or 19:00 Europe/Paris local time (daylight saving time included), the system shall send exactly one notification to the ntfy topic stored in the `NTFY_TOPIC` repository secret; at any other local time it shall send nothing.
-- [ ] AC2: The system shall pick the fiche uniformly at random among `buzzwords/*.md`.
-- [ ] AC3: The system shall use the fiche's term, followed by its acronym in parentheses when present, as the notification title, and the first explanation bullet of its body, as plain text without Markdown, as the notification message.
-- [ ] AC4: When the notification is tapped, the system shall open the fiche's page on the published site.
-- [ ] AC5: If `NTFY_TOPIC` is missing or ntfy rejects the request, then the workflow shall fail with an error naming the cause; if `buzzwords/` holds no fiche, then it shall end successfully without sending.
+- [x] AC1: When the scheduled workflow runs at 08:00, 13:00 or 19:00 Europe/Paris local time (daylight saving time included), the system shall send exactly one notification to the ntfy topic stored in the `NTFY_TOPIC` repository secret; at any other local time it shall send nothing. (`isNotificationTime`'s DST-aware logic is unit tested for both the winter and summer offsets; the cron actually firing on schedule is a manual post-merge check, see the PR.)
+- [x] AC2: The system shall pick the fiche uniformly at random among `buzzwords/*.md`.
+- [x] AC3: The system shall use the fiche's term, followed by its acronym in parentheses when present, as the notification title, and the first explanation bullet of its body, as plain text without Markdown, as the notification message.
+- [x] AC4: When the notification is tapped, the system shall open the fiche's page on the published site.
+- [x] AC5: If `NTFY_TOPIC` is missing or ntfy rejects the request, then the workflow shall fail with an error naming the cause; if `buzzwords/` holds no fiche, then it shall end successfully without sending.
 
 ## Out of scope
 
@@ -37,3 +37,8 @@ _None._
 2. Add that name as the `NTFY_TOPIC` secret in the repository settings (Secrets and variables → Actions).
 
 ## Plan
+
+- [x] Acceptance tests for the pure logic (random pick, title/message formatting, plain-text stripping, fiche URL, local-time gate, fail/succeed paths of AC5) in `test/notify.test.mjs`, against fixtures in `test/fixtures/notify/`.
+- [x] `scripts/notify.mjs`: testable pure functions (`isNotificationTime`, `pickRandomFiche`, `buildTitle`, `buildMessage`, `buildFicheUrl`) plus a `notify(...)` orchestrator (injectable clock/RNG/fetch) and a `main()` CLI entry point that reads `buzzwords/`, `NTFY_TOPIC` and calls ntfy's JSON publish API.
+- [x] `.github/workflows/notify.yml`: cron covering both Europe/Paris UTC offsets (winter and summer), `NTFY_TOPIC` passed as an env secret, runs `node scripts/notify.mjs`.
+- [ ] Manual check (documented in the PR, not unit tested): the workflow actually fires at 08:00/13:00/19:00 Paris time across the DST boundary, and a real ntfy notification is received and opens the fiche page on tap.

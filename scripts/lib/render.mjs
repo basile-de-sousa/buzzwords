@@ -1,6 +1,6 @@
 // HTML templates for the catalog. All links are relative so the site works
 // under the GitHub Pages project path (`/buzzwords/`) as well as at a root.
-import { RELATIONS } from './fiches.mjs';
+import { RELATIONS, backlinkLabel } from './fiches.mjs';
 import { buildSearchIndex, serializeIndex } from './search-index.mjs';
 
 export const SITE_TITLE = 'Buzzwords';
@@ -102,8 +102,27 @@ ${groups.join('\n')}
 </div>`;
 }
 
+// "Cité par" (SPEC-003): fiches whose relations resolve to this one, already grouped,
+// deduped and sorted by `backlinkResolver`. Mirrors renderRelations's markup so both
+// sections share the same look, but every entry is already a resolved fiche.
+function renderBacklinks(backlinksByKey) {
+  const groups = RELATIONS.filter(({ key }) => backlinksByKey[key]?.length).map(
+    ({ key, symbol, label }) => `<section class="relation-group" data-relation="${key}">
+<h3><span class="op">${escapeHtml(symbol)}</span> ${escapeHtml(label)}</h3>
+<ul>
+${backlinksByKey[key].map((citer) => `<li><a href="../${citer.slug}/">${escapeHtml(backlinkLabel(citer))}</a></li>`).join('\n')}
+</ul>
+</section>`,
+  );
+  if (!groups.length) return '';
+  return `<div class="backlinks">
+<h2>Cité par</h2>
+${groups.join('\n')}
+</div>`;
+}
+
 /** One fiche page, served at `<slug>/`. */
-export function renderFiche(fiche, resolve) {
+export function renderFiche(fiche, resolve, getBacklinks) {
   const aliases = fiche.aliases.length
     ? `<p class="aliases">Aussi appelé : ${fiche.aliases.map(escapeHtml).join(', ')}</p>`
     : '';
@@ -122,6 +141,7 @@ ${tags}
 ${fiche.bodyHtml}
 </div>
 ${renderRelations(fiche, resolve)}
+${renderBacklinks(getBacklinks(fiche))}
 <p class="dates">Créée le ${escapeHtml(fiche.created)} · mise à jour le ${escapeHtml(fiche.updated)}</p>
 </article>`,
   });
