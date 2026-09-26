@@ -57,4 +57,4 @@ _None._
 - [x] Render pages: home page sorted by term with acronyms (AC1), one page per fiche with Markdown body and relation groups (AC2), relation resolution against term/acronym/aliases (AC3), relative links, French copy, shared stylesheet.
 - [x] CLI entry: `npm run build` reads `buzzwords/` and writes `_site/`, exits non-zero on error (AC4).
 - [x] Deploy: GitHub Actions workflow building and deploying to Pages on push to `main`, plus CI on pull requests (AC5).
-- [ ] ADRs for the build stack and the Pages deployment source.
+- [x] ADRs for the build stack and the Pages deployment source.
