@@ -1,5 +1,5 @@
 # ADR-001: Minimal Node build script with js-yaml and marked
-Status: proposed - Date: 2026-09-26
+Status: accepted - Date: 2026-09-26
 
 ## Context
 
