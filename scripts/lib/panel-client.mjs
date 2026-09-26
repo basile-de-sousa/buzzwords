@@ -58,12 +58,14 @@ export function init(window, { fetchImpl = window.fetch?.bind(window) } = {}) {
     expandLink.href = href;
     expandLink.hidden = false;
     panel.hidden = false;
+    document.body.classList.add('panel-open');
     content.focus();
   }
 
   function hide() {
     if (panel.hidden) return;
     panel.hidden = true;
+    document.body.classList.remove('panel-open');
     if (opener) {
       opener.focus();
       opener = null;
@@ -86,8 +88,11 @@ export function init(window, { fetchImpl = window.fetch?.bind(window) } = {}) {
   }
 
   function close() {
-    history.back();
-    hide(); // back() is not guaranteed to fire `popstate` for every history implementation
+    // A fresh pushState rather than history.back(): back()'s URL update is not
+    // guaranteed synchronous (or even implemented) across environments, and every
+    // panel is opened from the home path, so "close" and "go to the home path" agree.
+    history.pushState(null, '', homePath);
+    hide();
   }
 
   list.addEventListener('click', (event) => {

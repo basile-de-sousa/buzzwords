@@ -12,6 +12,9 @@ export { loadFiches } from './lib/fiches.mjs';
 // Browser script for search and tag filter (SPEC-002), copied as is to `search.js`.
 const SEARCH_CLIENT = fileURLToPath(new URL('./lib/search-client.mjs', import.meta.url));
 
+// Browser script for the fiche side panel (SPEC-005), copied as is to `panel.js`.
+const PANEL_CLIENT = fileURLToPath(new URL('./lib/panel-client.mjs', import.meta.url));
+
 // Refuse to wipe a folder that contains the sources or the working directory.
 function assertSafeOutDir(srcDir, outDir) {
   const out = resolve(outDir);
@@ -40,6 +43,7 @@ export async function build({ srcDir = 'buzzwords', outDir = '_site' } = {}) {
   writeFileSync(join(outDir, 'index.html'), renderHome(fiches));
   writeFileSync(join(outDir, 'style.css'), STYLESHEET);
   copyFileSync(SEARCH_CLIENT, join(outDir, 'search.js'));
+  copyFileSync(PANEL_CLIENT, join(outDir, 'panel.js'));
   writeFileSync(join(outDir, '.nojekyll'), '');
   for (const fiche of fiches) {
     mkdirSync(join(outDir, fiche.slug), { recursive: true });

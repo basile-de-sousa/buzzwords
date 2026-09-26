@@ -113,7 +113,12 @@ test('SPEC-005 AC2: the panel content is the fiche’s own full-page markup, not
   const fullPage = readOut(page.outDir, 'enterprise-service-bus', 'index.html');
   const article = extractFicheArticle(fullPage);
   assert.ok(article, 'the fiche page has an <article class="fiche">');
-  assert.equal(page.content.innerHTML.trim(), article.trim());
+
+  // Compare through the DOM on both sides: a raw-string comparison would fail on
+  // harmless entity-encoding differences (e.g. `&#39;`) that parsing normalizes away.
+  const reference = new JSDOM(`<div>${article}</div>`);
+  t.after(() => reference.window.close());
+  assert.equal(page.content.innerHTML.trim(), reference.window.document.body.firstElementChild.innerHTML.trim());
 });
 
 test('SPEC-005 AC3: the close control and Escape close the panel, restore the home URL and return focus', async (t) => {
