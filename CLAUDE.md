@@ -1,6 +1,6 @@
 # Project rules
 
-Project: _not described yet — ask the user for one sentence and replace this line._
+Project: a personal glossary of IT strategy and enterprise-architecture buzzwords. The `/buzzword` skill saves each fiche to `buzzwords/<slug>.md`, and a static site on GitHub Pages lists them all (user-facing copy in French).
 
 ## Commands
 
@@ -9,7 +9,7 @@ _Not known yet — add test, lint, typecheck and build commands here once they e
 ## Rules
 
 - All code, comments, commits and docs in English (user-facing copy follows the product's language).
-- Code never goes directly to the default branch (or the branch named here): use a `feat/…` or `fix/…` branch and a pull request with passing checks. Docs (`docs/**`, this file) may be committed straight to it.
+- Code never goes directly to the default branch (or the branch named here): use a `feat/…` or `fix/…` branch and a pull request with passing checks. Docs (`docs/**`, this file) and buzzword fiches (`buzzwords/**`, written by the `/buzzword` skill) may be committed straight to it.
 - Trivial change (typo, small obvious bug): no spec, just a `fix/…` branch and a pull request.
 - Conventional Commits, with the spec reference when there is one: `feat(auth): lock account after 5 failures (SPEC-012)`.
 - Run the commands above before each commit that touches code. Never weaken a test to make it pass unless the spec changed.
