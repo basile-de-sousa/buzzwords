@@ -110,6 +110,11 @@ export function init(window, { fetchImpl = window.fetch?.bind(window) } = {}) {
   document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape' && !panel.hidden) close();
   });
+  // `panel` is the dimmed backdrop around `.panel-card` (Notion-style peek): a click
+  // that lands on it directly, not on the card or its content, closes the panel.
+  panel.addEventListener('click', (event) => {
+    if (event.target === panel) close();
+  });
 
   window.addEventListener('popstate', () => {
     const slug = slugFromPath(window.location.pathname, homePath);

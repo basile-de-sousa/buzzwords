@@ -136,6 +136,19 @@ test('SPEC-005 AC3: the close control and Escape close the panel, restore the ho
   assert.equal(page.window.location.pathname, '/');
 });
 
+test('SPEC-005: clicking the backdrop outside the panel card closes it (Notion-style peek)', async (t) => {
+  const page = await homePage(t);
+  await page.click('api-gateway');
+
+  // A click that lands on the card itself (not the backdrop) does not close the panel.
+  page.panel.querySelector('.panel-card').dispatchEvent(new page.window.MouseEvent('click', { bubbles: true }));
+  assert.equal(page.panel.hidden, false, 'clicking inside the card leaves the panel open');
+
+  page.panel.dispatchEvent(new page.window.MouseEvent('click', { bubbles: true }));
+  assert.equal(page.panel.hidden, true, 'clicking the backdrop closes the panel');
+  assert.equal(page.window.location.pathname, '/');
+});
+
 test('SPEC-005 AC4: the expand control is a real link to the full fiche page, not intercepted', async (t) => {
   const page = await homePage(t);
   await page.click('schema-directeur');
@@ -169,8 +182,8 @@ test('SPEC-005 AC5: the browser back/forward buttons open or close the panel to 
 test('SPEC-005 AC6: the stylesheet gives the panel the full screen at the mobile breakpoint', async (t) => {
   const outDir = await buildSite(t);
   const css = readOut(outDir, 'style.css');
-  const media = css.match(/@media[^{]*\{[\s\S]*?\.fiche-panel[\s\S]*?\}\s*\}/);
-  assert.ok(media, 'style.css has a mobile media query sizing .fiche-panel to the full screen');
+  const media = css.match(/@media[^{]*\{[\s\S]*?\.panel-card[\s\S]*?\}\s*\}/);
+  assert.ok(media, 'style.css has a mobile media query sizing .panel-card to the full screen');
   assert.match(media[0], /width:\s*100%/);
   // Manual check (visual, not covered by this test): resize a browser below the
   // breakpoint with the panel open and confirm it covers the screen edge to edge.
