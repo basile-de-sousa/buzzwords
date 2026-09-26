@@ -1,5 +1,5 @@
 ---
-status: ready
+status: in-progress
 depends: SPEC-001
 ---
 # SPEC-004: Random buzzword notifications
