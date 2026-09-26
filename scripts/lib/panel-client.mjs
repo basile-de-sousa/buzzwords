@@ -71,9 +71,20 @@ export function init(window, { fetchImpl = window.fetch?.bind(window), storage =
   const cache = new Map(); // slug -> article HTML
   let opener = null;
 
-  function pathOf(href) {
-    return new URL(href, window.location.href).pathname;
+  // Rewrite same-page relative hrefs ("./slug/", "./") to absolute paths, before any
+  // `pushState` runs: once the panel changes the URL, a plain relative href resolves
+  // against that *new* location instead of the page's own, silently pointing at the
+  // wrong (often nonexistent) page — the site-title link and every fiche-list link
+  // after the first click are exactly this. An absolute path is immune to that, and
+  // this also protects clicks we never intercept (the site title, a modifier-click
+  // that opens a fiche in a new tab).
+  function absolutize(a) {
+    const raw = a.getAttribute('href');
+    if (raw != null) a.setAttribute('href', new URL(raw, window.location.href).pathname);
   }
+  for (const a of list.querySelectorAll('a[href]')) absolutize(a);
+  const siteTitle = document.querySelector('.site-title');
+  if (siteTitle) absolutize(siteTitle);
 
   // The width is a CSS custom property on the root element: `.fiche-panel` reads it
   // for its own width, and `body.panel-open` reads it to push the list aside (AC1,
@@ -151,11 +162,12 @@ export function init(window, { fetchImpl = window.fetch?.bind(window), storage =
     const a = event.target.closest('a[href]');
     if (!a || !list.contains(a) || event.defaultPrevented) return;
     if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-    const slug = slugFromPath(pathOf(a.href), homePath);
+    const path = a.getAttribute('href'); // already an absolute path: see absolutize() above
+    const slug = slugFromPath(path, homePath);
     if (!slug) return;
     event.preventDefault();
     opener = a;
-    open(slug, a.href);
+    open(slug, path);
   });
 
   closeBtn.addEventListener('click', close);
