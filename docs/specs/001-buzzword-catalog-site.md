@@ -1,5 +1,5 @@
 ---
-status: draft
+status: ready
 ---
 # SPEC-001: Buzzword catalog site
 
@@ -45,6 +45,10 @@ updated: 2026-09-26               # required
 
 ## Open questions
 
-- A GitHub Pages site is public, even when the repo is private (outside GitHub Enterprise). Is it fine for the catalog to be publicly reachable at `basile-de-sousa.github.io/buzzwords`? If not, the fallback is a build artifact or a private host, which changes AC5.
+_None._
+
+## Decisions
+
+- Public hosting accepted (2026-09-26): the catalog is published on GitHub Pages at `basile-de-sousa.github.io/buzzwords`, publicly reachable.
 
 ## Plan
