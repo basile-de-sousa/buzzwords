@@ -4,7 +4,9 @@ Project: a personal glossary of IT strategy and enterprise-architecture buzzword
 
 ## Commands
 
-_Not known yet — add test, lint, typecheck and build commands here once they exist._
+- Install: `npm ci` (Node 22+)
+- Test: `npm test` (built-in `node:test` runner, files `test/**/*.test.mjs`)
+- Build: `npm run build` (reads `buzzwords/*.md`, writes the static site to `_site/`)
 
 ## Rules
 
