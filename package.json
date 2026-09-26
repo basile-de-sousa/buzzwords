@@ -1,0 +1,21 @@
+{
+  "name": "buzzwords",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Static catalog site for IT strategy and enterprise-architecture buzzword fiches",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "node --test \"test/**/*.test.mjs\""
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "js-yaml": "^5.4.2",
+    "marked": "^18.0.14"
+  },
+  "devDependencies": {
+    "jsdom": "^30.1.1"
+  }
+}

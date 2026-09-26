@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: done
 ---
 # SPEC-001: Buzzword catalog site
 
@@ -30,11 +30,11 @@ updated: 2026-09-26               # required
 
 ## Acceptance criteria
 
-- [ ] AC1: The system shall generate a home page listing every fiche in `buzzwords/*.md`, sorted alphabetically by `term`, each showing its acronym when present and linking to its fiche page.
-- [ ] AC2: The system shall generate one page per fiche, at `/<slug>/`, rendering its Markdown body and its relations grouped by operator (`<`, `>`, `&`, `=`, `≠`).
-- [ ] AC3: When a relation matches the `term`, `acronym` or an `alias` of another fiche (case-insensitive), the system shall render it as a link to that fiche; otherwise it shall render it as plain text marked "pas encore de fiche".
-- [ ] AC4: If a fiche lacks `term`, `slug`, `created` or `updated`, or its `slug` differs from its file name, then the build shall fail with an error naming the file.
-- [ ] AC5: When a commit is pushed to `main`, the system shall build the site and deploy it to GitHub Pages.
+- [x] AC1: The system shall generate a home page listing every fiche in `buzzwords/*.md`, sorted alphabetically by `term`, each showing its acronym when present and linking to its fiche page.
+- [x] AC2: The system shall generate one page per fiche, at `/<slug>/`, rendering its Markdown body and its relations grouped by operator (`<`, `>`, `&`, `=`, `≠`).
+- [x] AC3: When a relation matches the `term`, `acronym` or an `alias` of another fiche (case-insensitive), the system shall render it as a link to that fiche; otherwise it shall render it as plain text marked "pas encore de fiche".
+- [x] AC4: If a fiche lacks `term`, `slug`, `created` or `updated`, or its `slug` differs from its file name, then the build shall fail with an error naming the file.
+- [x] AC5: When a commit is pushed to `main`, the system shall build the site and deploy it to GitHub Pages.
 
 ## Out of scope
 
@@ -52,3 +52,9 @@ _None._
 - Public hosting accepted (2026-09-26): the catalog is published on GitHub Pages at `basile-de-sousa.github.io/buzzwords`, publicly reachable.
 
 ## Plan
+
+- [x] Load and validate fiches: parse frontmatter and body of `buzzwords/*.md`, fail on missing required fields or slug/file-name mismatch (AC4); expose the sorted fiche list for SPEC-002.
+- [x] Render pages: home page sorted by term with acronyms (AC1), one page per fiche with Markdown body and relation groups (AC2), relation resolution against term/acronym/aliases (AC3), relative links, French copy, shared stylesheet.
+- [x] CLI entry: `npm run build` reads `buzzwords/` and writes `_site/`, exits non-zero on error (AC4).
+- [x] Deploy: GitHub Actions workflow building and deploying to Pages on push to `main`, plus CI on pull requests (AC5).
+- [x] ADRs for the build stack and the Pages deployment source.
