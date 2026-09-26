@@ -1,6 +1,6 @@
-// Fiche side panel for the home page (SPEC-005). Shipped as-is to the site as
-// `panel.js` and imported by the tests in Node. `search.js` stays free of any
-// network request (SPEC-002 AC5 asserts that directly), so this lives in its
+// Fiche side panel for the home page (SPEC-005, SPEC-006). Shipped as-is to the
+// site as `panel.js` and imported by the tests in Node. `search.js` stays free of
+// any network request (SPEC-002 AC5 asserts that directly), so this lives in its
 // own module, loaded only on the home page alongside it.
 
 /** The `<article class="fiche">…</article>` of a fetched fiche page, or null if not found. */
@@ -22,20 +22,50 @@ export function slugFromPath(pathname, homePath) {
   return rest || null;
 }
 
+export const MIN_PANEL_WIDTH = 280; // px
+export const DEFAULT_PANEL_WIDTH = 448; // px, 28rem at the default root font size
+const MAX_PANEL_WIDTH_ABS = 720; // px
+const MAX_PANEL_WIDTH_RATIO = 0.8; // of the viewport
+const RESIZE_STEP = 24; // px per keyboard arrow press
+const STORAGE_KEY = 'buzzwords:panel-width';
+
+/** The largest width the panel may take in a viewport of `viewportWidth`. */
+export function maxPanelWidth(viewportWidth) {
+  return Math.max(MIN_PANEL_WIDTH, Math.min(MAX_PANEL_WIDTH_ABS, viewportWidth * MAX_PANEL_WIDTH_RATIO));
+}
+
+/** `width` constrained to [`MIN_PANEL_WIDTH`, `maxPanelWidth(viewportWidth)`], rounded to a whole pixel. */
+export function clampPanelWidth(width, viewportWidth) {
+  return Math.min(maxPanelWidth(viewportWidth), Math.max(MIN_PANEL_WIDTH, Math.round(width)));
+}
+
+/** The width stored by an earlier session, or null if there is none (or it can't be read). */
+export function readStoredWidth(storage) {
+  try {
+    const value = Number(storage.getItem(STORAGE_KEY));
+    return Number.isFinite(value) && value > 0 ? value : null;
+  } catch {
+    return null;
+  }
+}
+
 /**
- * Wire the home page: intercept clicks on fiche links, show the fetched fiche
- * in a side panel and keep the URL and browser history in sync.
+ * Wire the home page: intercept clicks on fiche links, show the fetched fiche in a
+ * side panel that pushes the list aside (desktop) or covers it (mobile, unchanged
+ * from SPEC-005), keep the URL and browser history in sync, and let the panel's
+ * width be dragged or keyboard-resized and remembered across sessions.
  * @param {Window} window
- * @param {{ fetchImpl?: typeof fetch }} [options]
+ * @param {{ fetchImpl?: typeof fetch, storage?: Storage }} [options]
  */
-export function init(window, { fetchImpl = window.fetch?.bind(window) } = {}) {
+export function init(window, { fetchImpl = window.fetch?.bind(window), storage = window.localStorage } = {}) {
   const { document, history } = window;
   const list = document.querySelector('.fiche-list');
   const panel = document.getElementById('fiche-panel');
+  const handle = panel?.querySelector('.panel-handle');
   const content = panel?.querySelector('.panel-content');
   const closeBtn = panel?.querySelector('.panel-close');
   const expandLink = panel?.querySelector('.panel-expand');
-  if (!list || !panel || !content || !closeBtn || !expandLink || !fetchImpl) return;
+  if (!list || !panel || !handle || !content || !closeBtn || !expandLink || !fetchImpl) return;
 
   const homePath = window.location.pathname;
   const cache = new Map(); // slug -> article HTML
@@ -45,13 +75,27 @@ export function init(window, { fetchImpl = window.fetch?.bind(window) } = {}) {
     return new URL(href, window.location.href).pathname;
   }
 
-  async function fetchArticle(href) {
-    const res = await fetchImpl(href);
-    if (!res.ok) throw new Error(`fiche fetch failed: ${res.status}`);
-    const article = extractFicheArticle(await res.text());
-    if (!article) throw new Error('fiche fetch: no <article class="fiche">');
-    return article;
+  // The width is a CSS custom property on the root element: `.fiche-panel` reads it
+  // for its own width, and `body.panel-open` reads it to push the list aside (AC1,
+  // AC4), so setting it here keeps both in sync from a single value.
+  function setWidth(width) {
+    const clamped = clampPanelWidth(width, window.innerWidth);
+    document.documentElement.style.setProperty('--panel-width', `${clamped}px`);
+    handle.setAttribute('aria-valuemin', String(MIN_PANEL_WIDTH));
+    handle.setAttribute('aria-valuemax', String(Math.round(maxPanelWidth(window.innerWidth))));
+    handle.setAttribute('aria-valuenow', String(clamped));
+    return clamped;
   }
+
+  function persistWidth(width) {
+    try {
+      storage.setItem(STORAGE_KEY, String(width));
+    } catch {
+      // No storage available (private browsing, quota): the width just won't persist.
+    }
+  }
+
+  setWidth(readStoredWidth(storage) ?? DEFAULT_PANEL_WIDTH);
 
   function show(slug, href, article) {
     content.innerHTML = article;
@@ -70,6 +114,14 @@ export function init(window, { fetchImpl = window.fetch?.bind(window) } = {}) {
       opener.focus();
       opener = null;
     }
+  }
+
+  async function fetchArticle(href) {
+    const res = await fetchImpl(href);
+    if (!res.ok) throw new Error(`fiche fetch failed: ${res.status}`);
+    const article = extractFicheArticle(await res.text());
+    if (!article) throw new Error('fiche fetch: no <article class="fiche">');
+    return article;
   }
 
   async function open(slug, href) {
@@ -110,16 +162,42 @@ export function init(window, { fetchImpl = window.fetch?.bind(window) } = {}) {
   document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape' && !panel.hidden) close();
   });
-  // `panel` is the dimmed backdrop around `.panel-card` (Notion-style peek): a click
-  // that lands on it directly, not on the card or its content, closes the panel.
-  panel.addEventListener('click', (event) => {
-    if (event.target === panel) close();
-  });
 
   window.addEventListener('popstate', () => {
     const slug = slugFromPath(window.location.pathname, homePath);
     if (slug && cache.has(slug)) show(slug, window.location.pathname, cache.get(slug));
     else hide();
+  });
+
+  // Drag-resize (AC4): the handle sits on the panel's left edge, so moving the
+  // pointer left widens the panel by exactly that many pixels.
+  let dragStartX = 0;
+  let dragStartWidth = DEFAULT_PANEL_WIDTH;
+
+  function onPointerMove(event) {
+    setWidth(dragStartWidth + (dragStartX - event.clientX));
+  }
+  function onPointerUp() {
+    window.removeEventListener('mousemove', onPointerMove);
+    window.removeEventListener('mouseup', onPointerUp);
+    persistWidth(parseInt(document.documentElement.style.getPropertyValue('--panel-width'), 10));
+  }
+  handle.addEventListener('mousedown', (event) => {
+    if (event.button !== 0) return;
+    event.preventDefault();
+    dragStartX = event.clientX;
+    dragStartWidth = parseInt(document.documentElement.style.getPropertyValue('--panel-width'), 10) || DEFAULT_PANEL_WIDTH;
+    window.addEventListener('mousemove', onPointerMove);
+    window.addEventListener('mouseup', onPointerUp);
+  });
+
+  // Keyboard resize (AC6): Left widens, Right narrows, same as dragging the handle left/right.
+  handle.addEventListener('keydown', (event) => {
+    const current = parseInt(document.documentElement.style.getPropertyValue('--panel-width'), 10) || DEFAULT_PANEL_WIDTH;
+    if (event.key === 'ArrowLeft') persistWidth(setWidth(current + RESIZE_STEP));
+    else if (event.key === 'ArrowRight') persistWidth(setWidth(current - RESIZE_STEP));
+    else return;
+    event.preventDefault();
   });
 }
 

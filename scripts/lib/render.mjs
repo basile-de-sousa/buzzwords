@@ -56,19 +56,18 @@ ${tagFilter}
 </div>`;
 }
 
-// Side panel shell for a fiche (SPEC-005): hidden markup that `panel.js` fills in
-// and reveals once a fiche link is clicked. Its expand link is a plain, un-intercepted
-// <a>, so it always navigates like a normal link (AC4). Modeled on Notion's page peek:
-// `.fiche-panel` is the dimmed backdrop (also the click-outside-to-close target),
-// `.panel-card` is the floating panel docked toward its right edge.
+// Side panel shell for a fiche (SPEC-005, SPEC-006): hidden markup that `panel.js`
+// fills in and reveals once a fiche link is clicked. Its expand link is a plain,
+// un-intercepted <a>, so it always navigates like a normal link (AC4). The panel
+// pushes the list aside rather than overlaying it (SPEC-006 AC1), so there is no
+// backdrop; `.panel-handle` is the draggable/keyboard-resizable edge (AC4, AC6).
 const PANEL = `<div class="fiche-panel" id="fiche-panel" hidden>
-<div class="panel-card">
+<div class="panel-handle" role="separator" aria-orientation="vertical" aria-label="Redimensionner le panneau" tabindex="0"></div>
 <div class="panel-bar">
 <a class="panel-expand" href="#" hidden>Page complète →</a>
 <button type="button" class="panel-close" aria-label="Fermer">✕</button>
 </div>
 <div class="panel-content" tabindex="-1"></div>
-</div>
 </div>`;
 
 /** Home page: every fiche, already sorted by term, with search and tag filter. */
@@ -172,6 +171,7 @@ export const STYLESHEET = `:root {
   --accent: #0b5cad;
   --border: #e2e2e5;
   --chip: #f0f0f3;
+  --panel-width: 28rem;
 }
 @media (prefers-color-scheme: dark) {
   :root {
@@ -229,21 +229,20 @@ h3 { font-size: 1rem; margin: 1rem 0 0.3rem; }
 .tag-filter button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .empty { color: var(--muted); }
 .fiche-panel {
-  position: fixed; inset: 0; z-index: 20;
-  background: rgba(15, 15, 15, 0.4);
-  display: flex; justify-content: flex-end;
-  padding: 3vh 3vh 3vh 0;
-}
-.panel-card {
-  width: min(38rem, 100%); background: var(--bg); border-radius: 12px;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+  position: fixed; top: 0; right: 0; bottom: 0; width: var(--panel-width); z-index: 20;
+  background: var(--bg); border-left: 1px solid var(--border);
+  box-shadow: -8px 0 24px rgba(0, 0, 0, 0.12);
   overflow-y: auto; padding: 0 20px 24px;
 }
+.panel-handle {
+  position: absolute; top: 0; bottom: 0; left: -3px; width: 6px;
+  cursor: col-resize; touch-action: none; border-radius: 3px;
+}
+.panel-handle:hover, .panel-handle:focus-visible { background: var(--accent); opacity: 0.4; outline: none; }
 .panel-bar {
   position: sticky; top: 0; background: var(--bg); display: flex;
   justify-content: space-between; align-items: center; gap: 12px;
   padding: 14px 0; margin-bottom: 4px; border-bottom: 1px solid var(--border);
-  border-radius: 12px 12px 0 0;
 }
 .panel-close {
   font: inherit; font-size: 1.1rem; line-height: 1; color: var(--fg); background: var(--chip);
@@ -251,10 +250,13 @@ h3 { font-size: 1rem; margin: 1rem 0 0.3rem; }
 }
 .panel-close:focus-visible, .panel-expand:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .panel-content:focus { outline: none; }
-body.panel-open { overflow: hidden; }
+/* Pushes the list aside instead of the panel overlaying it (SPEC-006 AC1, AC2):
+   body's own content box narrows by the panel's width, so the centered main
+   column reflows into whatever room is left, with no separate layout needed. */
+body.panel-open { padding-right: var(--panel-width); }
 @media (max-width: 640px) {
-  .fiche-panel { padding: 0; background: var(--bg); }
-  .panel-card { width: 100%; border-radius: 0; box-shadow: none; }
-  .panel-bar { border-radius: 0; }
+  .fiche-panel { width: 100%; border-left: none; box-shadow: none; }
+  .panel-handle { display: none; }
+  body.panel-open { padding-right: 0; overflow: hidden; }
 }
 `;
