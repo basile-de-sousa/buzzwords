@@ -4,7 +4,7 @@ import { copyFileSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join, resolve, relative, isAbsolute } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { loadFiches, relationResolver } from './lib/fiches.mjs';
+import { loadFiches, relationResolver, backlinkResolver } from './lib/fiches.mjs';
 import { renderFiche, renderHome, STYLESHEET } from './lib/render.mjs';
 
 export { loadFiches } from './lib/fiches.mjs';
@@ -31,6 +31,7 @@ function assertSafeOutDir(srcDir, outDir) {
 export async function build({ srcDir = 'buzzwords', outDir = '_site' } = {}) {
   const fiches = loadFiches(srcDir);
   const resolveRelation = relationResolver(fiches);
+  const getBacklinks = backlinkResolver(fiches, resolveRelation);
 
   assertSafeOutDir(srcDir, outDir);
   rmSync(outDir, { recursive: true, force: true });
@@ -42,7 +43,7 @@ export async function build({ srcDir = 'buzzwords', outDir = '_site' } = {}) {
   writeFileSync(join(outDir, '.nojekyll'), '');
   for (const fiche of fiches) {
     mkdirSync(join(outDir, fiche.slug), { recursive: true });
-    writeFileSync(join(outDir, fiche.slug, 'index.html'), renderFiche(fiche, resolveRelation));
+    writeFileSync(join(outDir, fiche.slug, 'index.html'), renderFiche(fiche, resolveRelation, getBacklinks));
   }
   return { fiches };
 }

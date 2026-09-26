@@ -126,3 +126,53 @@ export function relationResolver(fiches) {
     return matches.find((fiche) => fiche !== from) ?? matches[0] ?? null;
   };
 }
+
+// Inverse of each relation operator (SPEC-003 AC1): `<` and `>` swap, the rest are symmetric.
+const INVERSE_RELATION = { in: 'contains', contains: 'in', near: 'near', same: 'same', not: 'not' };
+
+const backlinkLabel = (fiche) => fiche.acronym || fiche.term;
+
+/**
+ * Build a resolver for the fiches citing another one ("Cité par", SPEC-003): for a
+ * fiche B, returns the fiches whose relations resolve to B, grouped by the inverse
+ * operator (AC1), a fiche B already relates to itself left out (AC2), sorted like
+ * "Buzzwords liés" (RELATIONS order, then alphabetically by label, AC3). Groups with
+ * no entry are left out (AC4). Computed in memory only, from the already loaded
+ * fiches; no fiche file is read or written again (AC5).
+ * @returns {(fiche: object) => Record<string, object[]>}
+ */
+export function backlinkResolver(fiches, resolveRelation) {
+  const citersByTargetAndKey = new Map(
+    fiches.map((fiche) => [fiche.slug, Object.fromEntries(RELATIONS.map(({ key }) => [key, new Map()]))]),
+  );
+  const ownTargets = new Map(fiches.map((fiche) => [fiche.slug, new Set()]));
+
+  for (const fiche of fiches) {
+    for (const { key } of RELATIONS) {
+      for (const name of fiche.relations[key]) {
+        const target = resolveRelation(name, fiche);
+        if (!target || target === fiche) continue;
+        ownTargets.get(fiche.slug).add(target.slug);
+        citersByTargetAndKey.get(target.slug)[INVERSE_RELATION[key]].set(fiche.slug, fiche);
+      }
+    }
+  }
+
+  return (fiche) => {
+    const alreadyRelated = ownTargets.get(fiche.slug) ?? new Set();
+    const groupsByKey = citersByTargetAndKey.get(fiche.slug) ?? {};
+    const result = {};
+    for (const { key } of RELATIONS) {
+      const citers = [...groupsByKey[key].values()].filter((citer) => !alreadyRelated.has(citer.slug));
+      if (!citers.length) continue;
+      result[key] = citers.sort(
+        (a, b) =>
+          backlinkLabel(a).localeCompare(backlinkLabel(b), 'fr', { sensitivity: 'base' }) ||
+          a.slug.localeCompare(b.slug),
+      );
+    }
+    return result;
+  };
+}
+
+export { backlinkLabel };
