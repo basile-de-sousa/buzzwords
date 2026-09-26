@@ -1,5 +1,5 @@
 ---
-status: ready
+status: in-progress
 depends: SPEC-001, SPEC-002
 ---
 # SPEC-005: Fiche side panel on the home page
