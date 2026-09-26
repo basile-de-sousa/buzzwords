@@ -28,3 +28,8 @@ A relation is only written in the fiche that declares it. When a new fiche says 
 _None._
 
 ## Plan
+
+- [ ] `scripts/lib/fiches.mjs`: add a `backlinkResolver(fiches, resolveRelation)` that, for each fiche, computes the fiches whose relations resolve to it, grouped by the inverse operator (`in`/`contains` swap, `near`/`same`/`not` unchanged), deduped per group, excluding any fiche the target already relates to itself (AC2), sorted like `sortByTerm` (acronym-or-term label, French collation, slug tie-break).
+- [ ] `scripts/lib/render.mjs`: add a `renderBacklinks` section ("Cité par", same group markup/order as "Buzzwords liés") and wire it into `renderFiche` via a new parameter; omit the section when there is nothing to show (AC4).
+- [ ] `scripts/build.mjs`: build the resolver once per build and pass it to `renderFiche` for every fiche (AC5: computed in memory from the loaded fiches, no write back to `buzzwords/`).
+- [ ] Run `npm test` and `npm run build`; iterate until the SPEC-003 acceptance tests pass.
