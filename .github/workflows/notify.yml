@@ -1,0 +1,29 @@
+name: Random buzzword notification
+
+on:
+  # GitHub Actions cron always runs in UTC and never shifts for daylight saving
+  # time, so this covers both Europe/Paris UTC offsets: 06/11/17 UTC (CEST,
+  # UTC+2, summer) and 07/12/18 UTC (CET, UTC+1, winter) are 08:00/13:00/19:00
+  # Paris local time depending on the season. `scripts/notify.mjs` computes the
+  # actual local time itself and sends nothing when it isn't one of the three
+  # target times (AC1), so the extra runs each day are silent no-ops.
+  schedule:
+    - cron: '0 6,7,11,12,17,18 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: node scripts/notify.mjs
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
