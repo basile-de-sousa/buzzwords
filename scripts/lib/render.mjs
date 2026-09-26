@@ -58,13 +58,17 @@ ${tagFilter}
 
 // Side panel shell for a fiche (SPEC-005): hidden markup that `panel.js` fills in
 // and reveals once a fiche link is clicked. Its expand link is a plain, un-intercepted
-// <a>, so it always navigates like a normal link (AC4).
+// <a>, so it always navigates like a normal link (AC4). Modeled on Notion's page peek:
+// `.fiche-panel` is the dimmed backdrop (also the click-outside-to-close target),
+// `.panel-card` is the floating panel docked toward its right edge.
 const PANEL = `<div class="fiche-panel" id="fiche-panel" hidden>
+<div class="panel-card">
 <div class="panel-bar">
 <a class="panel-expand" href="#" hidden>Page complète →</a>
 <button type="button" class="panel-close" aria-label="Fermer">✕</button>
 </div>
 <div class="panel-content" tabindex="-1"></div>
+</div>
 </div>`;
 
 /** Home page: every fiche, already sorted by term, with search and tag filter. */
@@ -225,14 +229,21 @@ h3 { font-size: 1rem; margin: 1rem 0 0.3rem; }
 .tag-filter button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .empty { color: var(--muted); }
 .fiche-panel {
-  position: fixed; top: 0; right: 0; bottom: 0; width: min(28rem, 100%);
-  background: var(--bg); border-left: 1px solid var(--border);
-  overflow-y: auto; padding: 0 16px 24px; box-shadow: -8px 0 24px rgba(0, 0, 0, 0.15);
+  position: fixed; inset: 0; z-index: 20;
+  background: rgba(15, 15, 15, 0.4);
+  display: flex; justify-content: flex-end;
+  padding: 3vh 3vh 3vh 0;
+}
+.panel-card {
+  width: min(38rem, 100%); background: var(--bg); border-radius: 12px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+  overflow-y: auto; padding: 0 20px 24px;
 }
 .panel-bar {
   position: sticky; top: 0; background: var(--bg); display: flex;
   justify-content: space-between; align-items: center; gap: 12px;
-  padding: 12px 0; margin-bottom: 12px; border-bottom: 1px solid var(--border);
+  padding: 14px 0; margin-bottom: 4px; border-bottom: 1px solid var(--border);
+  border-radius: 12px 12px 0 0;
 }
 .panel-close {
   font: inherit; font-size: 1.1rem; line-height: 1; color: var(--fg); background: var(--chip);
@@ -242,6 +253,8 @@ h3 { font-size: 1rem; margin: 1rem 0 0.3rem; }
 .panel-content:focus { outline: none; }
 body.panel-open { overflow: hidden; }
 @media (max-width: 640px) {
-  .fiche-panel { width: 100%; border-left: none; }
+  .fiche-panel { padding: 0; background: var(--bg); }
+  .panel-card { width: 100%; border-radius: 0; box-shadow: none; }
+  .panel-bar { border-radius: 0; }
 }
 `;
