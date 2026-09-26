@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: done
 ---
 # SPEC-001: Buzzword catalog site
 
@@ -30,11 +30,11 @@ updated: 2026-09-26               # required
 
 ## Acceptance criteria
 
-- [ ] AC1: The system shall generate a home page listing every fiche in `buzzwords/*.md`, sorted alphabetically by `term`, each showing its acronym when present and linking to its fiche page.
-- [ ] AC2: The system shall generate one page per fiche, at `/<slug>/`, rendering its Markdown body and its relations grouped by operator (`<`, `>`, `&`, `=`, `≠`).
-- [ ] AC3: When a relation matches the `term`, `acronym` or an `alias` of another fiche (case-insensitive), the system shall render it as a link to that fiche; otherwise it shall render it as plain text marked "pas encore de fiche".
-- [ ] AC4: If a fiche lacks `term`, `slug`, `created` or `updated`, or its `slug` differs from its file name, then the build shall fail with an error naming the file.
-- [ ] AC5: When a commit is pushed to `main`, the system shall build the site and deploy it to GitHub Pages.
+- [x] AC1: The system shall generate a home page listing every fiche in `buzzwords/*.md`, sorted alphabetically by `term`, each showing its acronym when present and linking to its fiche page.
+- [x] AC2: The system shall generate one page per fiche, at `/<slug>/`, rendering its Markdown body and its relations grouped by operator (`<`, `>`, `&`, `=`, `≠`).
+- [x] AC3: When a relation matches the `term`, `acronym` or an `alias` of another fiche (case-insensitive), the system shall render it as a link to that fiche; otherwise it shall render it as plain text marked "pas encore de fiche".
+- [x] AC4: If a fiche lacks `term`, `slug`, `created` or `updated`, or its `slug` differs from its file name, then the build shall fail with an error naming the file.
+- [x] AC5: When a commit is pushed to `main`, the system shall build the site and deploy it to GitHub Pages.
 
 ## Out of scope
 
