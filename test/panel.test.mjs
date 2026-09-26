@@ -176,6 +176,33 @@ test('SPEC-005 AC1: clicking a fiche link opens the panel and pushes the fiche U
   assert.match(page.content.textContent, /Event-Driven Architecture/, 'panel shows the fiche');
 });
 
+test('regression: a second fiche click still resolves correctly after the URL was pushed once', async (t) => {
+  // Bug: `history.pushState` changes the document's URL, so a plain relative href
+  // like "./slug/" on an already-rendered link starts resolving against the *new*
+  // location instead of the page's own — the second click went to
+  // "/api-gateway/enterprise-service-bus/" (nonexistent) instead of
+  // "/enterprise-service-bus/", fetched a 404, and fell back to a real navigation there.
+  const page = await homePage(t);
+  await page.click('api-gateway');
+  assert.equal(page.window.location.pathname, '/api-gateway/');
+
+  await page.click('enterprise-service-bus');
+  assert.equal(page.window.location.pathname, '/enterprise-service-bus/', 'not nested under the first fiche’s path');
+  assert.match(page.content.textContent, /Enterprise Service Bus/);
+  assert.equal(page.calls.get('enterprise-service-bus'), 1, 'fetched the correct path, not a 404 for a nested one');
+});
+
+test('regression: the site-title link still points home after a fiche has been opened', async (t) => {
+  // Same root cause as above: href="./" on the header's "Buzzwords" link resolved
+  // against the pushed fiche URL instead of the real home path.
+  const page = await homePage(t);
+  await page.click('api-gateway');
+
+  const siteTitle = page.document.querySelector('.site-title');
+  assert.ok(siteTitle, 'the page has a site-title link');
+  assert.equal(new URL(siteTitle.href).pathname, '/', 'still resolves to the home path, not "/api-gateway/"');
+});
+
 test('SPEC-005 AC2: the panel content is the fiche’s own full-page markup, not a duplicate', async (t) => {
   const page = await homePage(t);
   await page.click('enterprise-service-bus');
