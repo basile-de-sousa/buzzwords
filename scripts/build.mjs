@@ -1,6 +1,6 @@
 // Static site builder for the buzzword catalog (SPEC-001).
 // Usage: node scripts/build.mjs [srcDir=buzzwords] [outDir=_site]
-import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { copyFileSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join, resolve, relative, isAbsolute } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -8,6 +8,9 @@ import { loadFiches, relationResolver } from './lib/fiches.mjs';
 import { renderFiche, renderHome, STYLESHEET } from './lib/render.mjs';
 
 export { loadFiches } from './lib/fiches.mjs';
+
+// Browser script for search and tag filter (SPEC-002), copied as is to `search.js`.
+const SEARCH_CLIENT = fileURLToPath(new URL('./lib/search-client.mjs', import.meta.url));
 
 // Refuse to wipe a folder that contains the sources or the working directory.
 function assertSafeOutDir(srcDir, outDir) {
@@ -35,6 +38,7 @@ export async function build({ srcDir = 'buzzwords', outDir = '_site' } = {}) {
 
   writeFileSync(join(outDir, 'index.html'), renderHome(fiches));
   writeFileSync(join(outDir, 'style.css'), STYLESHEET);
+  copyFileSync(SEARCH_CLIENT, join(outDir, 'search.js'));
   writeFileSync(join(outDir, '.nojekyll'), '');
   for (const fiche of fiches) {
     mkdirSync(join(outDir, fiche.slug), { recursive: true });
