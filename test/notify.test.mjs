@@ -13,9 +13,11 @@ import { loadFiches } from '../scripts/lib/fiches.mjs';
 import {
   isNotificationTime,
   pickRandomFiche,
+  pickRandomFiches,
   buildTitle,
   buildMessage,
   buildFicheUrl,
+  parseNotifyConfig,
   notify,
   SITE_BASE_URL,
 } from '../scripts/notify.mjs';
@@ -175,4 +177,151 @@ test('SPEC-004 AC5: sends exactly one notification at a target time when everyth
   assert.equal(result.sent, true);
   assert.equal(sentBody.topic, 'some-topic');
   assert.equal(sentBody.title, buildTitle(fiches[0]));
+});
+
+// --- SPEC-007 AC1: settings read from notify.config.json, defaults when absent ---
+
+test('SPEC-007 AC1: an absent config file yields SPEC-004\'s original defaults', () => {
+  const config = parseNotifyConfig(undefined);
+  assert.deepEqual(config, {
+    timeZone: 'Europe/Paris',
+    targets: ['08:00', '13:00', '19:00'],
+    count: 1,
+    bulletCount: 1,
+  });
+});
+
+test('SPEC-007 AC1: valid JSON overrides only the fields it sets', () => {
+  const config = parseNotifyConfig(JSON.stringify({ count: 3 }));
+  assert.equal(config.count, 3);
+  assert.equal(config.timeZone, 'Europe/Paris');
+  assert.deepEqual(config.targets, ['08:00', '13:00', '19:00']);
+  assert.equal(config.bulletCount, 1);
+});
+
+// --- SPEC-007 AC2: count distinct fiches per run, capped at the number available ---
+
+test('SPEC-007 AC2: pickRandomFiches returns `count` distinct fiches', () => {
+  let i = 0;
+  const draws = [0, 0]; // always take index 0 of the shrinking pool: still 2 distinct fiches
+  const random = () => draws[i++];
+  const picked = pickRandomFiches(fiches, 2, random);
+  assert.equal(picked.length, 2);
+  assert.notEqual(picked[0], picked[1]);
+});
+
+test('SPEC-007 AC2: pickRandomFiches caps at the number of fiches available', () => {
+  const picked = pickRandomFiches(fiches, fiches.length + 5, () => 0);
+  assert.equal(picked.length, fiches.length);
+  assert.equal(new Set(picked).size, fiches.length);
+});
+
+test('SPEC-007 AC2: notify sends one notification per distinct fiche, up to `count`', async () => {
+  let calls = 0;
+  const titles = [];
+  const result = await notify({
+    fiches,
+    now: new Date('2026-01-15T07:00:00Z'),
+    topic: 'some-topic',
+    baseUrl: SITE_BASE_URL,
+    count: 2,
+    random: () => 0,
+    fetchImpl: async (url, init) => {
+      calls += 1;
+      titles.push(JSON.parse(init.body).title);
+      return { ok: true };
+    },
+  });
+  assert.equal(calls, 2);
+  assert.equal(result.sent, true);
+  assert.equal(new Set(titles).size, 2);
+});
+
+test('SPEC-007 AC2: notify caps at the number of available fiches when `count` exceeds it', async () => {
+  let calls = 0;
+  const result = await notify({
+    fiches,
+    now: new Date('2026-01-15T07:00:00Z'),
+    topic: 'some-topic',
+    baseUrl: SITE_BASE_URL,
+    count: fiches.length + 5,
+    random: () => 0,
+    fetchImpl: async () => {
+      calls += 1;
+      return { ok: true };
+    },
+  });
+  assert.equal(calls, fiches.length);
+  assert.equal(result.sent, true);
+});
+
+// --- SPEC-007 AC3: bulletCount controls how much of the definition is shown ---
+
+test('SPEC-007 AC3: bulletCount 0 means title only, no message body', () => {
+  assert.equal(buildMessage(esb, 0), '');
+});
+
+test('SPEC-007 AC3: bulletCount 2 joins the first two bullets with a blank line', () => {
+  assert.equal(
+    buildMessage(esb, 2),
+    "Conceptuellement : un bus d'intégration qui fait transiter les messages entre applications, avec un lien vers la doc.\n\nConcrètement : routage, transformation, orchestration.",
+  );
+});
+
+test('SPEC-007 AC3: bulletCount "all" includes every bullet', () => {
+  assert.equal(
+    buildMessage(esb, 'all'),
+    "Conceptuellement : un bus d'intégration qui fait transiter les messages entre applications, avec un lien vers la doc.\n\nConcrètement : routage, transformation, orchestration.\n\nEx : MuleSoft, IBM App Connect.",
+  );
+});
+
+test('SPEC-007 AC3: default bulletCount is still 1 (SPEC-004 AC3 behavior unchanged)', () => {
+  assert.equal(
+    buildMessage(esb),
+    "Conceptuellement : un bus d'intégration qui fait transiter les messages entre applications, avec un lien vers la doc.",
+  );
+});
+
+// --- SPEC-007 AC4: invalid config fails loudly, before any send ---
+
+test('SPEC-007 AC4: invalid JSON throws a descriptive error', () => {
+  assert.throws(() => parseNotifyConfig('{not json'), /not valid JSON/);
+});
+
+test('SPEC-007 AC4: a non-positive count throws a descriptive error', () => {
+  assert.throws(() => parseNotifyConfig(JSON.stringify({ count: 0 })), /"count"/);
+});
+
+test('SPEC-007 AC4: an invalid bulletCount throws a descriptive error', () => {
+  assert.throws(() => parseNotifyConfig(JSON.stringify({ bulletCount: -1 })), /"bulletCount"/);
+  assert.throws(() => parseNotifyConfig(JSON.stringify({ bulletCount: 'every' })), /"bulletCount"/);
+});
+
+test('SPEC-007 AC4: a target not on the hour throws a descriptive error', () => {
+  assert.throws(() => parseNotifyConfig(JSON.stringify({ targets: ['08:30'] })), /"targets"/);
+});
+
+// --- SPEC-007 AC5: a rejection on any send fails the run, even after another succeeded ---
+
+test('SPEC-007 AC5: fails when the second of two sends is rejected by ntfy, even though the first succeeded', async () => {
+  let calls = 0;
+  await assert.rejects(
+    () =>
+      notify({
+        fiches,
+        now: new Date('2026-01-15T07:00:00Z'),
+        topic: 'some-topic',
+        baseUrl: SITE_BASE_URL,
+        count: 2,
+        random: () => 0,
+        fetchImpl: async () => {
+          calls += 1;
+          return calls === 1
+            ? { ok: true }
+            : { ok: false, status: 500, statusText: 'Internal Server Error', text: async () => 'boom' };
+        },
+      }),
+    /500/,
+  );
+  assert.equal(calls, 2);
 });
