@@ -1,5 +1,5 @@
 ---
-status: draft
+status: ready
 depends: SPEC-004
 supersedes: SPEC-004 (AC1, AC2, AC3)
 ---
@@ -35,4 +35,4 @@ _None._
 - `count` is one fixed number for every timeslot, not configurable per slot (user, 2026-09-27).
 - Missing config file falls back to SPEC-004's original defaults, so behavior is unchanged until the user creates the file (agent default, cheap to change).
 - Fewer fiches than `count`: send one per available fiche rather than failing or skipping (generalizes SPEC-007's original two-notification fallback).
-- The workflow's cron moves from 6 fixed UTC runs/day to hourly (still free on a public repo) so that `targets` changes never require touching `.github/workflows/notify.yml` again. Flagged for confirmation — see reply.
+- The workflow's cron moves from 6 fixed UTC runs/day to hourly (still free on a public repo) so that `targets` changes never require touching `.github/workflows/notify.yml` again (confirmed, user, 2026-09-27).
