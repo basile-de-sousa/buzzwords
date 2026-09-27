@@ -1,13 +1,13 @@
 name: Random buzzword notification
 
 on:
-  # Runs every hour so that any local time in notify.config.json's `targets`
-  # (SPEC-007 AC1) can be matched without editing this cron (SPEC-007 AC6).
-  # `scripts/notify.mjs` computes the actual local time itself and sends
-  # nothing outside a configured target (SPEC-004 AC1), so the other runs
-  # each day are silent no-ops.
+  # Runs every 5 minutes so that any local time in notify.config.json's
+  # `targets` (SPEC-008 AC1) can be matched without editing this cron
+  # (SPEC-008 AC3). `scripts/notify.mjs` computes the actual local time
+  # itself and sends nothing outside a configured target (SPEC-004 AC1), so
+  # the other runs each day are silent no-ops.
   schedule:
-    - cron: '0 * * * *'
+    - cron: '*/5 * * * *'
   workflow_dispatch:
 
 permissions:

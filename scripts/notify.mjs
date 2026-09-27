@@ -1,8 +1,8 @@
-// Random buzzword notification via ntfy (SPEC-004, SPEC-007).
+// Random buzzword notification via ntfy (SPEC-004, SPEC-007, SPEC-008).
 // Usage: node scripts/notify.mjs [srcDir=buzzwords]
 //
-// Invoked on an hourly schedule by .github/workflows/notify.yml (SPEC-007
-// AC6); `isNotificationTime` below decides, from the actual local time and
+// Invoked every 5 minutes by .github/workflows/notify.yml (SPEC-008 AC3);
+// `isNotificationTime` below decides, from the actual local time and
 // `notify.config.json`'s `targets`, whether this run should send anything
 // (SPEC-004 AC1).
 import { existsSync, readFileSync } from 'node:fs';
@@ -27,7 +27,8 @@ export const DEFAULT_CONFIG = Object.freeze({
   bulletCount: 1,
 });
 
-const HOUR_ON_THE_HOUR = /^([01]\d|2[0-3]):00$/;
+/** `HH:MM` with minutes a multiple of 5 — the smallest interval GitHub Actions' cron can trigger on (SPEC-008 AC1, AC2). */
+const FIVE_MINUTE_ALIGNED = /^([01]\d|2[0-3]):[0-5][05]$/;
 
 /**
  * Parses and validates `notify.config.json`'s content (SPEC-007 AC1, AC4).
@@ -58,8 +59,8 @@ export function parseNotifyConfig(raw) {
       `${CONFIG_PATH}: "bulletCount" must be a non-negative integer or "all", got ${JSON.stringify(config.bulletCount)}`,
     );
   }
-  if (!Array.isArray(config.targets) || !config.targets.length || !config.targets.every((t) => HOUR_ON_THE_HOUR.test(t))) {
-    throw new Error(`${CONFIG_PATH}: "targets" must be a non-empty array of "HH:00" local times`);
+  if (!Array.isArray(config.targets) || !config.targets.length || !config.targets.every((t) => FIVE_MINUTE_ALIGNED.test(t))) {
+    throw new Error(`${CONFIG_PATH}: "targets" must be a non-empty array of "HH:MM" local times on a 5-minute mark`);
   }
   if (typeof config.timeZone !== 'string' || !config.timeZone) {
     throw new Error(`${CONFIG_PATH}: "timeZone" must be a non-empty string`);

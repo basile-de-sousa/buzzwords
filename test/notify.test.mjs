@@ -297,8 +297,22 @@ test('SPEC-007 AC4: an invalid bulletCount throws a descriptive error', () => {
   assert.throws(() => parseNotifyConfig(JSON.stringify({ bulletCount: 'every' })), /"bulletCount"/);
 });
 
-test('SPEC-007 AC4: a target not on the hour throws a descriptive error', () => {
-  assert.throws(() => parseNotifyConfig(JSON.stringify({ targets: ['08:30'] })), /"targets"/);
+test('SPEC-007 AC4: a target with a non-numeric or out-of-range time throws a descriptive error', () => {
+  assert.throws(() => parseNotifyConfig(JSON.stringify({ targets: ['25:00'] })), /"targets"/);
+  assert.throws(() => parseNotifyConfig(JSON.stringify({ targets: ['08:60'] })), /"targets"/);
+});
+
+// --- SPEC-008 AC1: targets accepted at 5-minute resolution, not just on the hour ---
+
+test('SPEC-008 AC1: a target on a 5-minute mark other than :00 parses without error', () => {
+  const config = parseNotifyConfig(JSON.stringify({ targets: ['08:05', '13:30', '19:55'] }));
+  assert.deepEqual(config.targets, ['08:05', '13:30', '19:55']);
+});
+
+// --- SPEC-008 AC2: a target not aligned to 5 minutes is rejected, not rounded ---
+
+test('SPEC-008 AC2: a target not on a 5-minute mark throws a descriptive error', () => {
+  assert.throws(() => parseNotifyConfig(JSON.stringify({ targets: ['03:13'] })), /"targets"/);
 });
 
 // --- SPEC-007 AC5: a rejection on any send fails the run, even after another succeeded ---
