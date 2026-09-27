@@ -1,5 +1,5 @@
 ---
-status: ready
+status: in-progress
 depends: SPEC-004
 supersedes: SPEC-004 (AC1, AC2, AC3)
 ---
