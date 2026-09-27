@@ -1,6 +1,6 @@
 {
   "timeZone": "Europe/Paris",
-  "targets": ["03:13", "08:00", "13:00", "19:00"],
+  "targets": ["03:00", "08:00", "13:00", "19:00"],
   "count": 2,
   "bulletCount": 1
 }
