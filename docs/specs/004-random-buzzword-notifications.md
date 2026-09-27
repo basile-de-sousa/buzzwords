@@ -10,9 +10,9 @@ The goal is to learn buzzwords passively, from the phone's lock screen (Google P
 
 ## Acceptance criteria
 
-- [x] AC1: When the scheduled workflow runs at 08:00, 13:00 or 19:00 Europe/Paris local time (daylight saving time included), the system shall send exactly one notification to the ntfy topic stored in the `NTFY_TOPIC` repository secret; at any other local time it shall send nothing. (`isNotificationTime`'s DST-aware logic is unit tested for both the winter and summer offsets; the cron actually firing on schedule is a manual post-merge check, see the PR.)
-- [x] AC2: The system shall pick the fiche uniformly at random among `buzzwords/*.md`.
-- [x] AC3: The system shall use the fiche's term, followed by its acronym in parentheses when present, as the notification title, and the first explanation bullet of its body, as plain text without Markdown, as the notification message.
+- [x] AC1: When the scheduled workflow runs at 08:00, 13:00 or 19:00 Europe/Paris local time (daylight saving time included), the system shall send exactly one notification to the ntfy topic stored in the `NTFY_TOPIC` repository secret; at any other local time it shall send nothing. (`isNotificationTime`'s DST-aware logic is unit tested for both the winter and summer offsets; the cron actually firing on schedule is a manual post-merge check, see the PR.) (target times and cron frequency now configurable, superseded by SPEC-007 AC1, AC6)
+- [x] AC2: The system shall pick the fiche uniformly at random among `buzzwords/*.md`. (generalized to `count` distinct fiches, superseded by SPEC-007 AC2)
+- [x] AC3: The system shall use the fiche's term, followed by its acronym in parentheses when present, as the notification title, and the first explanation bullet of its body, as plain text without Markdown, as the notification message. (bullet depth now configurable, superseded by SPEC-007 AC3)
 - [x] AC4: When the notification is tapped, the system shall open the fiche's page on the published site.
 - [x] AC5: If `NTFY_TOPIC` is missing or ntfy rejects the request, then the workflow shall fail with an error naming the cause; if `buzzwords/` holds no fiche, then it shall end successfully without sending.
 
