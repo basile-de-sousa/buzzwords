@@ -11,9 +11,9 @@ SPEC-007 restricted `targets` to on-the-hour values because the workflow only ra
 
 ## Acceptance criteria
 
-- [x] AC1: The system shall accept `targets` entries at 5-minute resolution (`HH:MM` where `MM` is a multiple of 5: `00`, `05`, `10`, ... `55`), superseding SPEC-007 AC1's `HH:00`-only restriction.
-- [x] AC2: If a `targets` entry's minutes are not a multiple of 5, then the system shall reject it with an error naming the cause, before attempting any send (extends SPEC-007 AC4's validation; no rounding or coercion).
-- [x] AC3: The scheduled GitHub Actions workflow shall run every 5 minutes, all year, so that changing `targets` in `notify.config.json` continues to take effect without editing the workflow file (supersedes SPEC-007 AC6's hourly schedule). (Infrastructure, no unit test: manual check in the PR, as for SPEC-004 AC1's cron.)
+- [x] AC1: The system shall accept `targets` entries at 5-minute resolution (`HH:MM` where `MM` is a multiple of 5: `00`, `05`, `10`, ... `55`), superseding SPEC-007 AC1's `HH:00`-only restriction. (superseded by SPEC-010)
+- [x] AC2: If a `targets` entry's minutes are not a multiple of 5, then the system shall reject it with an error naming the cause, before attempting any send (extends SPEC-007 AC4's validation; no rounding or coercion). (superseded by SPEC-010)
+- [x] AC3: The scheduled GitHub Actions workflow shall run every 5 minutes, all year, so that changing `targets` in `notify.config.json` continues to take effect without editing the workflow file (supersedes SPEC-007 AC6's hourly schedule). (Infrastructure, no unit test: manual check in the PR, as for SPEC-004 AC1's cron.) (superseded by SPEC-010)
 
 ## Out of scope
 
