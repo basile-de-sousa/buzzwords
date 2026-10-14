@@ -1,13 +1,11 @@
 name: Random buzzword notification
 
 on:
-  # Runs every 5 minutes so that any local time in notify.config.json's
-  # `targets` (SPEC-008 AC1) can be matched without editing this cron
-  # (SPEC-008 AC3). `scripts/notify.mjs` computes the actual local time
-  # itself and sends nothing outside a configured target (SPEC-004 AC1), so
-  # the other runs each day are silent no-ops.
+  # Three runs a day: about 08:00, 13:00 and 19:00 Europe/Paris in summer,
+  # one hour earlier in winter. Every run sends (SPEC-010 AC1, AC2); GitHub may
+  # delay or skip a scheduled run under load, which is accepted.
   schedule:
-    - cron: '*/5 * * * *'
+    - cron: '0 6,11,17 * * *'
   workflow_dispatch:
 
 permissions:

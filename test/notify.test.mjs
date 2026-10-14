@@ -1,9 +1,7 @@
 // Acceptance tests for SPEC-004 (random buzzword notifications).
 //
-// AC1 (cron timing) and the real ntfy HTTP call are exercised manually (see the PR):
-// they need a live scheduler / network to mean anything. The `isNotificationTime`
-// helper below is the pure DST-aware logic that decides whether "now" is a target
-// local time, so it IS unit tested here even though the cron schedule itself is not.
+// SPEC-004 AC1's local-time gate is superseded by SPEC-010 (every run sends, see
+// test/notify-every-run.test.mjs). The real ntfy HTTP call is exercised manually.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { dirname, join } from 'node:path';
@@ -11,7 +9,6 @@ import { fileURLToPath } from 'node:url';
 
 import { loadFiches } from '../scripts/lib/fiches.mjs';
 import {
-  isNotificationTime,
   pickRandomFiche,
   pickRandomFiches,
   buildTitle,
@@ -26,34 +23,6 @@ const here = dirname(fileURLToPath(import.meta.url));
 const fiches = loadFiches(join(here, 'fixtures', 'notify'));
 const esb = fiches.find((f) => f.slug === 'enterprise-service-bus');
 const urbanisation = fiches.find((f) => f.slug === 'urbanisation-si');
-
-// --- AC1: local-time gate, including the DST shift (Europe/Paris) ---
-
-test('SPEC-004 AC1: matches 08:00/13:00/19:00 Europe/Paris in winter (CET, UTC+1)', () => {
-  assert.equal(isNotificationTime(new Date('2026-01-15T07:00:00Z')), true); // 08:00 local
-  assert.equal(isNotificationTime(new Date('2026-01-15T12:00:00Z')), true); // 13:00 local
-  assert.equal(isNotificationTime(new Date('2026-01-15T18:00:00Z')), true); // 19:00 local
-});
-
-test('SPEC-004 AC1: matches 08:00/13:00/19:00 Europe/Paris in summer (CEST, UTC+2)', () => {
-  assert.equal(isNotificationTime(new Date('2026-07-15T06:00:00Z')), true); // 08:00 local
-  assert.equal(isNotificationTime(new Date('2026-07-15T11:00:00Z')), true); // 13:00 local
-  assert.equal(isNotificationTime(new Date('2026-07-15T17:00:00Z')), true); // 19:00 local
-});
-
-test('SPEC-004 AC1: does not match any other local time', () => {
-  assert.equal(isNotificationTime(new Date('2026-01-15T07:00:00Z')), true); // sanity: winter 08:00 still true
-  assert.equal(isNotificationTime(new Date('2026-01-15T08:00:00Z')), false); // 09:00 local, winter
-  assert.equal(isNotificationTime(new Date('2026-07-15T06:00:00Z')), true); // sanity: summer 08:00 still true
-  assert.equal(isNotificationTime(new Date('2026-07-15T07:00:00Z')), false); // 09:00 local, summer
-  assert.equal(isNotificationTime(new Date('2026-01-15T00:00:00Z')), false); // 01:00 local
-});
-
-test('SPEC-004 AC1: the same UTC instant that matches in winter does not match in summer and vice versa', () => {
-  // 07:00 UTC is 08:00 local in winter (CET) but 09:00 local in summer (CEST).
-  assert.equal(isNotificationTime(new Date('2026-01-15T07:00:00Z')), true);
-  assert.equal(isNotificationTime(new Date('2026-07-15T07:00:00Z')), false);
-});
 
 // --- AC2: uniformly random pick among buzzwords/*.md ---
 
@@ -119,17 +88,6 @@ test('SPEC-004 AC5: ends successfully without sending when buzzwords/ has no fic
   assert.equal(called, false);
 });
 
-test('SPEC-004 AC5: does nothing outside a target local time, without inspecting the topic', async () => {
-  const result = await notify({
-    fiches,
-    now: new Date('2026-01-15T09:00:00Z'), // not a target time
-    topic: undefined,
-    baseUrl: SITE_BASE_URL,
-    fetchImpl: async () => ({ ok: true }),
-  });
-  assert.equal(result.sent, false);
-});
-
 test('SPEC-004 AC5: fails with a clear error when NTFY_TOPIC is missing', async () => {
   await assert.rejects(
     () =>
@@ -183,19 +141,12 @@ test('SPEC-004 AC5: sends exactly one notification at a target time when everyth
 
 test('SPEC-007 AC1: an absent config file yields SPEC-004\'s original defaults', () => {
   const config = parseNotifyConfig(undefined);
-  assert.deepEqual(config, {
-    timeZone: 'Europe/Paris',
-    targets: ['08:00', '13:00', '19:00'],
-    count: 1,
-    bulletCount: 1,
-  });
+  assert.deepEqual(config, { count: 1, bulletCount: 1 });
 });
 
 test('SPEC-007 AC1: valid JSON overrides only the fields it sets', () => {
   const config = parseNotifyConfig(JSON.stringify({ count: 3 }));
   assert.equal(config.count, 3);
-  assert.equal(config.timeZone, 'Europe/Paris');
-  assert.deepEqual(config.targets, ['08:00', '13:00', '19:00']);
   assert.equal(config.bulletCount, 1);
 });
 
@@ -295,24 +246,6 @@ test('SPEC-007 AC4: a non-positive count throws a descriptive error', () => {
 test('SPEC-007 AC4: an invalid bulletCount throws a descriptive error', () => {
   assert.throws(() => parseNotifyConfig(JSON.stringify({ bulletCount: -1 })), /"bulletCount"/);
   assert.throws(() => parseNotifyConfig(JSON.stringify({ bulletCount: 'every' })), /"bulletCount"/);
-});
-
-test('SPEC-007 AC4: a target with a non-numeric or out-of-range time throws a descriptive error', () => {
-  assert.throws(() => parseNotifyConfig(JSON.stringify({ targets: ['25:00'] })), /"targets"/);
-  assert.throws(() => parseNotifyConfig(JSON.stringify({ targets: ['08:60'] })), /"targets"/);
-});
-
-// --- SPEC-008 AC1: targets accepted at 5-minute resolution, not just on the hour ---
-
-test('SPEC-008 AC1: a target on a 5-minute mark other than :00 parses without error', () => {
-  const config = parseNotifyConfig(JSON.stringify({ targets: ['08:05', '13:30', '19:55'] }));
-  assert.deepEqual(config.targets, ['08:05', '13:30', '19:55']);
-});
-
-// --- SPEC-008 AC2: a target not aligned to 5 minutes is rejected, not rounded ---
-
-test('SPEC-008 AC2: a target not on a 5-minute mark throws a descriptive error', () => {
-  assert.throws(() => parseNotifyConfig(JSON.stringify({ targets: ['03:13'] })), /"targets"/);
 });
 
 // --- SPEC-007 AC5: a rejection on any send fails the run, even after another succeeded ---
