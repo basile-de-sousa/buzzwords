@@ -1,5 +1,5 @@
 ---
-status: draft
+status: in-progress
 supersedes: SPEC-004 (AC1), SPEC-007 (AC1, AC6), SPEC-008
 ---
 # SPEC-010: Send a notification on every scheduled run
