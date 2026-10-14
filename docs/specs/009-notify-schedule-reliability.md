@@ -27,4 +27,4 @@ GitHub's own documentation acknowledges `schedule` events can be delayed or drop
 ## Decisions
 
 - Cause found (2026-10-14): the `schedule` trigger does fire, but GitHub throttles the 5-minute cron to about 4-5 runs a day at unpredictable minutes. `isNotificationTime` requires an exact `HH:MM` match, so the runs almost never land on a target and send nothing.
-- Not pursued (user, 2026-10-14): notifications move to a Claude scheduled task (exact times via `CRON_TZ=Europe/Paris`, push notification through the Claude app), replacing the GitHub Actions workflow and ntfy. See SPEC-010. The `notify.yml` workflow was disabled the same day._
+- Resolution (user, 2026-10-14): delivery times are only indicative, so the fix stays on GitHub Actions alone: fixed thrice-daily cron and no exact-time check (SPEC-010). No external cron service.

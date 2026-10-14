@@ -1,30 +1,32 @@
 ---
 status: draft
-supersedes: SPEC-004 (AC1, AC4, AC5), SPEC-008
+supersedes: SPEC-004 (AC1), SPEC-007 (AC1, AC6), SPEC-008
 ---
-# SPEC-010: Remove the GitHub Actions notification pipeline
+# SPEC-010: Send a notification on every scheduled run
 
 ## Why
 
-Random buzzword notifications are now sent by a Claude scheduled task ("Buzzword notifications", 07:53, 12:53 and 18:53 Europe/Paris), which pushes to the phone through the Claude app. The GitHub Actions pipeline (SPEC-004, SPEC-007, SPEC-008) never delivered reliably: GitHub throttles the 5-minute cron to a few random runs a day, so the exact-minute check almost never matched (see SPEC-009 Decisions). It was disabled on 2026-10-14. Keeping its code, tests and ntfy secret adds maintenance for a path nobody uses.
-
-The scheduled task reads the fiches and `notify.config.json` (`count`, `bulletCount`) straight from this repo, so those stay the source of truth. Delivery times now live in the scheduled task, not in the repo.
+GitHub throttles the 5-minute cron (SPEC-008) to about 4-5 runs a day at unpredictable minutes, and `isNotificationTime` only sends on an exact `HH:MM` target, so almost no run sends anything (see SPEC-009 Decisions). The delivery times were only indicative: the user has no timing constraint. Dropping the time check and scheduling the workflow three times a day makes every run that GitHub starts send a notification, with no external service and no Claude usage. The Claude scheduled task used as a stopgap is deleted once this ships.
 
 ## Acceptance criteria
 
-- [ ] AC1: The repository shall no longer contain `.github/workflows/notify.yml`, `scripts/notify.mjs`, `test/notify.test.mjs` or `test/fixtures/notify/`.
-- [ ] AC2: `notify.config.json` shall keep `count` and `bulletCount` and shall no longer contain `targets`.
-- [ ] AC3: `npm test` and `npm run build` shall pass after the removal.
-- [ ] AC4: `README.md` or `CLAUDE.md` shall state in one line that notifications come from the Claude scheduled task "Buzzword notifications" and that it reads `notify.config.json`.
+- [ ] AC1: When the notify workflow runs, from its schedule or a manual `workflow_dispatch`, the system shall send the notification (`count` fiches, `bulletCount` bullets each, per SPEC-007) without checking the local time.
+- [ ] AC2: The notify workflow shall be scheduled three times a day, morning, midday and evening Europe/Paris (cron `0 6,11,17 * * *` UTC; exact time and daylight saving shifts are not guaranteed).
+- [ ] AC3: The system shall no longer read or validate a `targets` field; `notify.config.json` shall contain only `count` and `bulletCount`.
+- [ ] AC4: The notify workflow shall be enabled again (it was disabled on 2026-10-14).
 
 ## Out of scope
 
-- The scheduled task itself (configured in Claude, not in this repo).
-- Deleting the `NTFY_TOPIC` secret and the ntfy app on the phone (user, manual).
-- Changes to the site or to the `/buzzword` skill.
+- Exact delivery time, and runs GitHub delays or skips under load.
+- Any external cron service, server or Claude scheduled task.
+- Changes to the message format, ntfy or the `/buzzword` skill.
 
 ## Open questions
 
 _None._
+
+## Decisions
+
+- No timing constraint: times are indicative, GitHub Actions only, no external service (user, 2026-10-14).
 
 ## Plan
