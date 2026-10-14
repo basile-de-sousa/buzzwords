@@ -1,10 +1,8 @@
-// Random buzzword notification via ntfy (SPEC-004, SPEC-007, SPEC-008).
+// Random buzzword notification via ntfy (SPEC-004, SPEC-007, SPEC-010).
 // Usage: node scripts/notify.mjs [srcDir=buzzwords]
 //
-// Invoked every 5 minutes by .github/workflows/notify.yml (SPEC-008 AC3);
-// `isNotificationTime` below decides, from the actual local time and
-// `notify.config.json`'s `targets`, whether this run should send anything
-// (SPEC-004 AC1).
+// Invoked three times a day by .github/workflows/notify.yml; every run sends,
+// with no local-time check (SPEC-010 AC1).
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -15,20 +13,13 @@ import { loadFiches } from './lib/fiches.mjs';
 /** Published site base URL (SPEC-001 Decisions). */
 export const SITE_BASE_URL = 'https://basile-de-sousa.github.io/buzzwords';
 
-const DEFAULT_TARGETS = ['08:00', '13:00', '19:00'];
-
 const CONFIG_PATH = 'notify.config.json';
 
 /** Settings used when `notify.config.json` is absent (SPEC-004's original behavior, SPEC-007 AC1). */
 export const DEFAULT_CONFIG = Object.freeze({
-  timeZone: 'Europe/Paris',
-  targets: DEFAULT_TARGETS,
   count: 1,
   bulletCount: 1,
 });
-
-/** `HH:MM` with minutes a multiple of 5 — the smallest interval GitHub Actions' cron can trigger on (SPEC-008 AC1, AC2). */
-const FIVE_MINUTE_ALIGNED = /^([01]\d|2[0-3]):[0-5][05]$/;
 
 /**
  * Parses and validates `notify.config.json`'s content (SPEC-007 AC1, AC4).
@@ -49,7 +40,11 @@ export function parseNotifyConfig(raw) {
     throw new Error(`${CONFIG_PATH} must be a JSON object`);
   }
 
-  const config = { ...DEFAULT_CONFIG, ...data };
+  // Only `count` and `bulletCount` are read; any other field (e.g. a legacy `targets`) is ignored (SPEC-010 AC3).
+  const config = {
+    count: data.count ?? DEFAULT_CONFIG.count,
+    bulletCount: data.bulletCount ?? DEFAULT_CONFIG.bulletCount,
+  };
 
   if (!Number.isInteger(config.count) || config.count < 1) {
     throw new Error(`${CONFIG_PATH}: "count" must be a positive integer, got ${JSON.stringify(config.count)}`);
@@ -59,12 +54,6 @@ export function parseNotifyConfig(raw) {
       `${CONFIG_PATH}: "bulletCount" must be a non-negative integer or "all", got ${JSON.stringify(config.bulletCount)}`,
     );
   }
-  if (!Array.isArray(config.targets) || !config.targets.length || !config.targets.every((t) => FIVE_MINUTE_ALIGNED.test(t))) {
-    throw new Error(`${CONFIG_PATH}: "targets" must be a non-empty array of "HH:MM" local times on a 5-minute mark`);
-  }
-  if (typeof config.timeZone !== 'string' || !config.timeZone) {
-    throw new Error(`${CONFIG_PATH}: "timeZone" must be a non-empty string`);
-  }
 
   return config;
 }
@@ -72,24 +61,6 @@ export function parseNotifyConfig(raw) {
 /** Reads `notify.config.json` from the current directory, or `undefined` if it doesn't exist. */
 function readConfigRaw() {
   return existsSync(CONFIG_PATH) ? readFileSync(CONFIG_PATH, 'utf8') : undefined;
-}
-
-/**
- * Whether `date` falls on one of `targets` (default 08:00/13:00/19:00) in
- * `timeZone` (default Europe/Paris), DST included: the offset conversion is
- * delegated to `Intl`, so the same UTC instant can match in winter and not in
- * summer (or vice versa) as the clocks shift (AC1).
- * @param {Date} date
- */
-export function isNotificationTime(date, { timeZone = 'Europe/Paris', targets = DEFAULT_TARGETS } = {}) {
-  const formatter = new Intl.DateTimeFormat('en-GB', {
-    timeZone,
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  });
-  const parts = Object.fromEntries(formatter.formatToParts(date).map((part) => [part.type, part.value]));
-  return targets.includes(`${parts.hour}:${parts.minute}`);
 }
 
 /** Uniformly random fiche among `fiches` (SPEC-004 AC2). `random` is injectable for tests. */
@@ -160,27 +131,21 @@ export function buildFicheUrl(fiche, baseUrl) {
 
 /**
  * Decides whether to send, and sends, `count` ntfy notifications for distinct
- * random fiches (SPEC-004 AC1-AC4, SPEC-007 AC1-AC3). Ends successfully without
- * sending outside a target local time or when `fiches` is empty; throws a
+ * random fiches (SPEC-004 AC2-AC4, SPEC-007 AC1-AC3), on every run (SPEC-010 AC1).
+ * Ends successfully without sending when `fiches` is empty; throws a
  * descriptive error when `topic` is missing or ntfy rejects any request, even
  * after another one in the same run already succeeded (SPEC-004 AC5, SPEC-007 AC5).
  * @returns {Promise<{ sent: boolean, reason?: string, notifications?: { fiche: object, title: string, message: string, url: string }[] }>}
  */
 export async function notify({
   fiches,
-  now = new Date(),
   topic,
   baseUrl = SITE_BASE_URL,
-  timeZone,
-  targets,
   count = 1,
   bulletCount = 1,
   random = Math.random,
   fetchImpl = fetch,
 }) {
-  if (!isNotificationTime(now, { timeZone, targets })) {
-    return { sent: false, reason: 'not a target local time (08:00/13:00/19:00 Europe/Paris)' };
-  }
   if (!fiches.length) {
     return { sent: false, reason: 'buzzwords/ has no fiche' };
   }
